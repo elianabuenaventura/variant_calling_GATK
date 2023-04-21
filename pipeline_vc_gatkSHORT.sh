@@ -1,6 +1,6 @@
 # PIPELINE FOR VARIANT CALLING USING GATK4 
 
-# by Eliana Buenaventura (ingrid.eliana.buenaventura.ruiz@regionh.dk)
+# by Eliana Buenaventura (elianabuenaventura@gmail.com)
 
 
 
@@ -9,43 +9,49 @@
 
 ## Prepare your folder structure #####################################
 
-cd 
+## Here is the folder structure inside the folder genepanels_gatk. Please note that each
+## run has its own folder with the exact same folder structure inside. Inside the folder
+## genepanels_gatk, we should also have a folder called known_sites with our truth sets.
 
-cd /mnt/d2/genepanels
+   
+├── genepanels_gatk
+│   ├── known_sites
+│   ├── run9
+│   │   ├── data
+│   │   │   ├── bam
+│   │   │   ├── untrimmed_fastq
+│   │   │   └── vcf
+│   │   ├── docs
+│   │   ├── report
+│   │   └── results
+│   │       ├── coverage
+│   │       └── metadata
+│   └── run10
+│       ├── data
+│       │   ├── bam
+│       │   ├── untrimmed_fastq
+│       │   └── vcf
+│       ├── docs
+│       ├── report
+│       └── results
+│           ├── coverage
+│           └── metadata
+├── ref_genome
+├── runs
+├── software
+└── targets_bed
 
-mkdir genepanels_gatk
 
-cd genepanels/genepanels_gatk
-
-mkdir run9
-
-cd run9/
-
-mkdir data results docs
-
-cd data/
-
-mkdir untrimmed_fastq
-
-cd untrimmed_fastq/
-
-cp /mnt/d2/genepanels/runs/run12/*/*.fastq.gz /mnt/d2/genepanels/genepanels_gatk/run12/data/untrimmed_fastq
-
-cp /mnt/d2/230214_M07116_0018_000000000-KPYY2/Alignment_1/20230215_145227/Fastq/*/*.fastq.gz .
-
-cd /mnt/d2/genepanels/
-
-mkdir targets_bed
+## Most of the scripts in this pipeline should be run from your particular run folder. Exmaple, from /run9 or /run10.
 
 
 
 ## Generate an unmapped BAM from FASTQ ################################
 
 ## Step 1: Convert FASTQ to uBAM and add read group information using FastqToSam ###
-    
-cd /mnt/d2/genepanels/genepanels_gatk/run9
+## Make sure your READ_GROUP_NAME, LIBRARY_NAME and PLATFORM_UNIT are adjusted to your data.
 
-mkdir data/bam
+cd .../genepanels_gatk/run9
 
 for infile in data/untrimmed_fastq/*_R1_001.fastq.gz
 do
@@ -67,9 +73,6 @@ done
 
 ## Step 2: Mark adapter sequences using MarkIlluminaAdapters ###
 
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-
 for infile in data/bam/*_fastqtosam.bam
 do
 	base=$(basename ${infile} _fastqtosam.bam)
@@ -82,9 +85,6 @@ done
 
 
 ## Step 3: Align reads with BWA-MEM and merge with uBAM using MergeBamAlignment ###
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
 
 for infile in data/bam/*_markilluminaadapters.bam
 do
@@ -116,9 +116,6 @@ done
 
 # MARK DUPLICATES ########################################################################
 
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-
 for infile in data/bam/*_piped.bam
 do
 	base=$(basename ${infile} _piped.bam)
@@ -131,9 +128,6 @@ done
 
 
 # BASE (QUALITY SCORE) RECALIBRATION #####################################################
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
 
 for infile in data/bam/*_marked_duplicates.bam
 do
@@ -166,9 +160,6 @@ done
 
 # CALL VARIANTS PER-SAMPLE ###############################################################
 
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-
 for infile in data/bam/*_BQSR_marked_duplicates.bam
 do
 	base=$(basename ${infile} _BQSR_marked_duplicates.bam)
@@ -186,10 +177,7 @@ done
 ## Step 1: Select SNPs and indels
 
 
-### Code - Selects SNPs for several samples (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
+### Code - Selects SNPs for several samples
 
 for infile in data/bam/*_BQSR_marked_duplicates.vcf
 do
@@ -218,30 +206,7 @@ done
 ## Step 2: Filtering of variants with VariantFiltration.
 
 
-### Code - Filters SNPs on several samples in same folder - QD < 2.0 (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-for infile in data/bam/*_snps.vcf
-do
-	base=$(basename ${infile} _snps.vcf)
-   gatk --java-options -Xmx8G VariantFiltration \
-    -V ${infile} \
-    -filter "QD < 2.0" --filter-name "QD2" \
-    -filter "QUAL < 30.0" --filter-name "QUAL30" \
-    -filter "SOR > 3.0" --filter-name "SOR3" \
-    -filter "FS > 60.0" --filter-name "FS60" \
-    -filter "MQ < 40.0" --filter-name "MQ40" \
-    -filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5" \
-    -filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
-    -O data/bam/${base}_snps_filtered.vcf
-done
-
-
-
-### Code - Filters SNPs on several samples in same folder - QD < 4.0 (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
+### Code - Filters SNPs on several samples in same folder - QD < 4.0
 
 for infile in data/bam/*_snps.vcf
 do
@@ -260,27 +225,7 @@ done
 
 
 
-### Code - Filters indels on several samples in same folder - QD < 2.0 (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-for infile in data/bam/*_indels.vcf
-do
-	base=$(basename ${infile} _indels.vcf)
-   gatk --java-options -Xmx8G VariantFiltration \
-    -V ${infile} \
-    -filter "QD < 2.0" --filter-name "QD2" \
-    -filter "QUAL < 30.0" --filter-name "QUAL30" \
-    -filter "FS > 200.0" --filter-name "FS200" \
-    -filter "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \
-    -O data/bam/${base}_indels_filtered.vcf
-done
-
-
-
-### Code - Filters indels on several samples in same folder - QD < 7.5 (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
+### Code - Filters indels on several samples in same folder - QD < 7.5
 
 for infile in data/bam/*_indels.vcf
 do
@@ -298,8 +243,6 @@ done
 
 ## Step 3: Concatenate SNPs and indels in one VCF file
 
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
 for infile in data/bam/*_snps_filtered.vcf
 do
    base=$(basename ${infile} _BQSR_marked_duplicates_snps_filtered.vcf)
@@ -312,45 +255,13 @@ done
 ## Step 4: Select variants in specific regions. 
 
 
-### Code - Create 'vcf' folder for outputs (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-mkdir data/vcf
-
-
-
-### Code - selects CASR several samples (tested)
-
-for infile in data/bam/CASR*_var_filtered.vcf
-do
-   base=$(basename ${infile} _var_filtered.vcf)
-   vcftools --vcf ${infile} --chr chr3 --from-bp 122183486 --to-bp 122291629 \
-   --recode --recode-INFO-all -c > data/vcf/${base}_chr3_casr.vcf
-   echo ${base}
-done
-
-
-
-### Code - selects MEFV several samples (tested)
-
-for infile in data/bam/MEFV*_var_filtered.vcf
-do
-   base=$(basename ${infile} _var_filtered.vcf)
-   vcftools --vcf ${infile} --chr chr16 --from-bp 3242027 --to-bp 3256776 \
-   --recode --recode-INFO-all -c > data/vcf/${base}_chr16_mefv.vcf
-   echo ${base}
-done
-
-
-
-### Code - selects fever-pakke targets for several samples (tested)
+### Code - selects FMF-pakke targets for several samples (tested)
 
 for infile in data/bam/mefv*_var_filtered.vcf
 do
    base=$(basename ${infile} _var_filtered.vcf)
-   vcftools --vcf ${infile} --bed /mnt/d2/genepanels/targets_bed/Fever_pakke_targets_hg38.bed \
-   --recode --recode-INFO-all -c > data/vcf/${base}_fever_var_filtered.vcf
+   vcftools --vcf ${infile} --bed /mnt/d2/genepanels/targets_bed/FMF_pakke_targets_hg38.bed \
+   --recode --recode-INFO-all -c > data/vcf/${base}_fmf_var_filtered.vcf
    echo ${base}
 done
 
@@ -358,7 +269,7 @@ done
 
 ### Code - selects FHH-ADH-pakke targets for several samples (tested)
 
-for infile in data/bam/casr*_var_filtered.vcf
+for infile in data/bam/fhh*_var_filtered.vcf
 do
    base=$(basename ${infile} _var_filtered.vcf)
    vcftools --vcf ${infile} --bed /mnt/d2/genepanels/targets_bed/FHH-ADH_pakke_targets_hg38.bed \
@@ -374,22 +285,12 @@ done
 ## PREPARE VARIANT METADATA FOR REPORT WITH VEP #########################################
 
 
-## Step 1: Create 'metadata' and 'report' folders for outputs.
-
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-mkdir results/metadata
-
-mkdir report
-
-
-## Step 2a: Produce all needed metadata for variants in coding and non-coding regions for 
+## Step 1: Produce all needed metadata for variants in coding and non-coding regions for 
 ## internal reference. Output in table format.
 
-cd /home/kba339/ensembl-vep
+cd .../ensembl-vep
 
-for infile in /mnt/d2/genepanels/genepanels_gatk/run14v/data/vcf/*_var_filtered.vcf
+for infile in .../genepanels_gatk/run9/data/vcf/*_var_filtered.vcf
 do
    base=$(basename ${infile} _var_filtered.vcf)
    ./vep -i ${infile} --cache \
@@ -402,13 +303,12 @@ done
 
 
 
-## Step 2b: Produce only needed metadata for variants in coding and non-coding regions for 
+## Step 2: Produce only needed metadata for variants in coding and non-coding regions for 
 ## internal report. Output in table format.
 
+cd .../ensembl-vep
 
-cd /home/kba339/ensembl-vep
-
-for infile in /mnt/d2/genepanels/genepanels_gatk/run14/data/vcf/*_var_filtered.vcf
+for infile in .../genepanels_gatk/run9/data/vcf/*_var_filtered.vcf
 do
    base=$(basename ${infile} _var_filtered.vcf)
    ./vep -i ${infile} --cache \
@@ -421,10 +321,6 @@ done
 
 
 ## Step 3: Prepare metadata table for internal report. Remove # from table and edit headers.
-
-
-cd /mnt/d2/genepanels/genepanels_gatk/run14
-
 
 for infile in results/metadata/*_metadata_report.txt
 do
@@ -462,43 +358,7 @@ done
 ## Step 1: Variants from VCF format to table format not for report but only for 
 ## internal reference.
 
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
 for infile in data/vcf/*_var_filtered.vcf
-do
-   base=$(basename ${infile} _var_filtered.vcf)
-   gatk VariantsToTable \
-     -V ${infile} \
-     -F CHROM -F POS -F TYPE -F REF -F ALT -F QUAL \
-     -F DP -F QD -F FS -F SOR -F MQRankSum -F ReadPosRankSum \
-     -GF AD -GF DP -GF GT -GF GQ -GF PL \
-     -O report/${base}_var_filtered_fulltable.table
-done
-
-
-
-### Code - only fever samples
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-for infile in data/vcf/*fever_var_filtered.vcf
-do
-   base=$(basename ${infile} _var_filtered.vcf)
-   gatk VariantsToTable \
-     -V ${infile} \
-     -F CHROM -F POS -F TYPE -F REF -F ALT -F QUAL \
-     -F DP -F QD -F FS -F SOR -F MQRankSum -F ReadPosRankSum \
-     -GF AD -GF DP -GF GT -GF GQ -GF PL \
-     -O report/${base}_var_filtered_fulltable.table
-done
-
-
-
-### Code - only adh samples
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-for infile in data/vcf/*adh_var_filtered.vcf
 do
    base=$(basename ${infile} _var_filtered.vcf)
    gatk VariantsToTable \
@@ -513,8 +373,6 @@ done
 
 ## Step 2: Variants from VCF format to table format for internal report.
 
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
 for infile in data/vcf/*_var_filtered.vcf
 do
    base=$(basename ${infile} _var_filtered.vcf)
@@ -528,8 +386,6 @@ done
 
 
 ## Step 3: Table formatting not for report but only for internal reference.
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
 
 for infile in report/*_var_filtered_fulltable.table
 do
@@ -555,9 +411,6 @@ done
 
 ## Step 4: Table formatting for internal report.
 
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-
 for infile in report/*_var_filtered.table
 do
     base=$(basename ${infile} _filtered.table)
@@ -577,50 +430,9 @@ done
 
 ## PREPARE COVERAGE INFO FOR REPORT ##########################################
 
-
-## Step 1: Create 'coverage' folder for outputs.
-
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-mkdir results/coverage
-
-
-
-## Step 2: Obtain read depth
-
-
-### Code - for several samples but gene CASR only (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
-
-
-for infile in data/bam/CASR*_BQSR_marked_duplicates.bam
-do
-	base=$(basename ${infile} _BQSR_marked_duplicates.bam)
-	samtools depth -d 0 -a ${infile} -b /mnt/d2/genepanels/targets_bed/hg38_coords_casr.bed \
-	-o results/coverage/${base}_gatk_dep.cov
-	echo ${base}
-done
-
-
-
-### Code - for several samples but gene MEFV only (tested)
-
-for infile in data/bam/MEFV*_BQSR_marked_duplicates.bam
-do
-	base=$(basename ${infile} _BQSR_marked_duplicates.bam)
-	samtools depth -d 0 -a ${infile} -b /mnt/d2/genepanels/targets_bed/hg38_coords_mefv.bed \
-	-o results/coverage/${base}_gatk_dep.cov
-	echo ${base}
-done
-
-
+## Step 1: Obtain read depth
 
 ### Code - for several samples and Fever-pakke targets
-
-cd /mnt/d2/genepanels/genepanels_gatk/run11
-
 
 for infile in data/bam/mefv*_BQSR_marked_duplicates.bam
 do
@@ -634,9 +446,6 @@ done
 
 ### Code - for several samples and FHH-ADH-pakke targets
 
-cd /mnt/d2/genepanels/genepanels_gatk/run11
-
-
 for infile in data/bam/casr*_BQSR_marked_duplicates.bam
 do
 	base=$(basename ${infile} _BQSR_marked_duplicates.bam)
@@ -647,12 +456,9 @@ done
 
 
 
-## Step 3: Calculate quality of read depth 
+## Step 2: Calculate quality of read depth 
 
-
-### Code for several samples - threshold 50 (tested)
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
+### Code for several samples - threshold 50
 
 for infile in results/coverage/*_gatk_dep.cov
 do
@@ -663,9 +469,7 @@ done
 
 
 
-## Step 4: Format output file
-
-cd /mnt/d2/genepanels/genepanels_gatk/run9
+## Step 3: Format output file
 
 cd results/coverage/
 
@@ -676,43 +480,6 @@ do
     awk 'BEGIN{print "Sample\tChr\tStart\tEnd\tMean_read_depth\tLength"}1' /dev/stdin >> ../../report/${base}_gatk_belowQ50dep.txt
     echo ${base}
 done
-
-
-
-# VIEWING THE ALIGNMENT WITH IGV #########################################################
-
-## We will start by creating a folder for the files that we will use on IGV. 
-
-### Code
-
-mkdir /mnt/d2/genepanels/genepanels_bcf/run9/results/files_for_igv
-cd /mnt/d2/genepanels/genepanels_bcf/run9
-
-
-## Now we will transfer our files to that new directory.
-
-### Code for all files in a folder (tested)
-
-cp results/bam/*.aligned.sorted.bam results/files_for_igv
-cp results/bam/*.aligned.sorted.bam.bai results/files_for_igv
-cp results/vcf/*_final_variants.vcf results/files_for_igv
-cp /mnt/d2/genepanels/ref_genome/hg38-v0-Homo_sapiens_assembly38.fasta results/files_for_igv
-
-
-## To open IGV in Linux, you should open a terminal window and follow below. 
-
-
-### Code 
-
-cd Downloads/IGV_Linux_2.14.1_WithJava/IGV_Linux_2.14.1/
-./igv.sh
-
-
-## Once the window of IGV is open, then load the reference genome "Human GRCh38/hg38". 
-## Then load the .bam and .vcf for the sample of interest. 
-## Remember that, in order to load the sequencing data, IGV needs the index file .bam.bai 
-## that should be placed in the same folder as the .bam file. If IGV does not find it 
-## there, the sequencing data will fail to load.
 
 
 
