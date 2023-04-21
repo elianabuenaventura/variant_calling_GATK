@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # PIPELINE FOR VARIANT CALLING USING GATK4 
 
 # by Eliana Buenaventura (elianabuenaventura@gmail.com)
