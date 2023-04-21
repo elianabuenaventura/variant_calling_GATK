@@ -3,8 +3,8 @@
 ## pipeline_vc_gatk.sh is a collection of scripts for variant calling from NGS sequence data using GATK 
 This is an analysis pipeline (based on GATK, Picard, samtools, bedtools, bcftools, vcftools, BWA, ensembl-vep) for analyzing data collected from a gene panel on a local supercomputer.
 
-This is a wrapper shell script for automating the pipeline starting from pre-processing reads and ending with reporting variants. 
-Pipeline runs in loops designed for processing batches of samples. 
+This pipeline starts from pre-processing reads and ends with reporting variants. 
+Pipeline runs in loops designed for processing batches of samples. File paths are to be adjusted according to your data. 
 
 It includes scripts that allow for:
 * read pre-processing with Picard
