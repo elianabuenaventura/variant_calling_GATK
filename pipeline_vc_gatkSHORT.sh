@@ -281,6 +281,20 @@ done
 
 
 
+# CREATE FINAL VCF FILE WITH ONLY PASSING VARIANTS #####################################
+
+
+cd /mnt/d2/genepanels/genepanels_gatk/runX
+
+for infile in data/vcf/*.vcf
+do
+   base=$(basename ${infile} _var_filtered.vcf)
+   vcftools --vcf ${infile} --remove-filtered-all \
+   --recode --recode-INFO-all -c > data/vcf/${base}_final.vcf
+   echo ${base}
+done
+
+
 # VARIANT REPORTING #####################################################################
 
 
