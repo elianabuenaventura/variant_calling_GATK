@@ -11,6 +11,21 @@
 
 ## Prepare your folder structure #####################################
 
+cd 
+cd /mnt/d2/genepanels
+cd runs
+mkdir runX
+cd /mnt/d2/genepanels/genepanels_gatk
+mkdir runX
+cd runX/
+mkdir data results docs report
+cd results/
+mkdir coverage metadata
+cd ..
+cd data/
+mkdir untrimmed_fastq bam vcf
+
+
 ## Here is the folder structure inside the folder genepanels_gatk. Please note that each
 ## run has its own folder with the exact same folder structure inside. Inside the folder
 ## genepanels_gatk, we should also have a folder called known_sites with our truth sets.
